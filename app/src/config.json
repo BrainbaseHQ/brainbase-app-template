@@ -1,0 +1,10 @@
+{
+  "inputs": [
+    {
+      "key": "github_repo",
+      "title": "GitHub Repo",
+      "description": "The GitHub repo to use for this project",
+      "type": "string"
+    }
+  ]
+}
