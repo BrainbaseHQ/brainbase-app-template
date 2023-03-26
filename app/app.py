@@ -1,6 +1,10 @@
 from flask import Flask, request, jsonify
 from src.index import run, setup
 from flask_cors import CORS
+from memory import create_or_update_db, get_history_from_db, update_history_in_db
+import sqlite3
+import threading
+import requests
 
 app = Flask(__name__)
 CORS(app)
@@ -63,5 +67,52 @@ def handle_run():
         return jsonify(str(e))
 
 
+def process_request(response_url, text):
+    # hit the external API endpoint with a GET request
+    try:
+        # return the result to the response_url
+        requests.post(response_url, json={"text": run(text)})
+    except requests.exceptions.Timeout:
+        # handle timeout error
+        requests.post(response_url, json={'text': 'Request timed out'})
+
+
+@app.route('/slack', methods=['POST'])
+def handle_slack():
+    token = request.form['token']
+    command = request.form['command']
+    text = request.form['text']
+    user_id = request.form['user_id']
+    response_url = request.form['response_url']
+
+    threading.Thread(target=process_request,
+                     args=(response_url, text, )).start()
+
+    # Return a 200 OK response to acknowledge receipt of the command
+    return "", 200
+
+
+@app.route('/messenger', methods=['GET', 'POST'])
+def handle_messenger():
+    print(request.args)
+    # Return a 200 OK response to acknowledge receipt of the command
+    return request.args['hub.challenge'], 200
+
+
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sqlite3.connect(DATABASE)
+    create_or_update_db(db)
+    return db
+
+
+def close_db(e=None):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.teardown_appcontext(close_db)
+    app.run(host="localhost", port=8080)
