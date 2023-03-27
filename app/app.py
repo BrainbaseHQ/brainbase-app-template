@@ -65,11 +65,16 @@ def handle_setup():
 @app.route('/run', methods=['POST'])
 def handle_run():
 
-    # Get the session ID from the request
-    session_id = request.json['session_id']
+    session_id = None
+
+    try:
+        # Get the session ID from the request
+        session_id = request.json['session_id']
+    except:
+        pass
 
     # Get the history from the database
-    history = get_history_from_db(get_db(), session_id or None)
+    history = get_history_from_db(get_db(), None)
 
     try:
         message = request.json['msg']
