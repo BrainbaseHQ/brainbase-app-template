@@ -21,6 +21,9 @@ def create_or_update_db(db):
 
 def get_history_from_db(db, session_id):
 
+    if session_id is None:
+         return []
+    
     #  create_or_update_db()
 
     history_ = db.execute(

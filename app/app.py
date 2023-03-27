@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, g
 from src.index import run, setup
 from flask_cors import CORS
 from memory import create_or_update_db, get_history_from_db, update_history_in_db
@@ -8,6 +8,11 @@ import requests
 
 app = Flask(__name__)
 CORS(app)
+
+""" 
+    Database to save chat history.
+"""
+DATABASE = "chat_history.db"
 
 
 @app.route('/')
@@ -59,9 +64,16 @@ def handle_setup():
 
 @app.route('/run', methods=['POST'])
 def handle_run():
+
+    # Get the session ID from the request
+    session_id = request.json['session_id']
+
+    # Get the history from the database
+    history = get_history_from_db(get_db(), session_id or None)
+
     try:
         message = request.json['msg']
-        response = run(message)
+        response = run(message=message, history=history)
         return jsonify(response)
     except Exception as e:
         return jsonify(str(e))
