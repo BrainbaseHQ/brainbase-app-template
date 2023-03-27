@@ -127,4 +127,4 @@ def close_db(e=None):
 
 if __name__ == '__main__':
     app.teardown_appcontext(close_db)
-    app.run(host="localhost", port=8080)
+    app.run(host="0.0.0.0", port=8080)
