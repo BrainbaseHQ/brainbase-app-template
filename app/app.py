@@ -74,7 +74,7 @@ def handle_run():
         pass
 
     # Get the history from the database
-    history = get_history_from_db(get_db(), None)
+    history = get_history_from_db(get_db(), session_id)
 
     try:
         message = request.json['msg']
