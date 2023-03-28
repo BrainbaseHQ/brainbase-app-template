@@ -79,6 +79,11 @@ def handle_run():
     try:
         message = request.json['msg']
         response = run(message=message, history=history)
+
+        # Update the history in the database with human message and bot response
+        update_history_in_db(get_db(), session_id, message, "human")
+        update_history_in_db(get_db(), session_id, response, "ai")
+
         return jsonify(response)
     except Exception as e:
         return jsonify(str(e))
