@@ -2,12 +2,19 @@ from flask import Flask, request, jsonify, g
 from src.index import run, setup
 from flask_cors import CORS
 from memory import create_or_update_db, get_history_from_db, update_history_in_db
+from logs import update_logs_in_db, get_logs_from_db, create_or_update_logs_db
 import sqlite3
 import threading
 import requests
+import logging
 
 app = Flask(__name__)
 CORS(app)
+
+""" 
+    Logger to log messages to the console.
+"""
+LOG_DATABASE = "log.db"
 
 """ 
     Database to save chat history.
@@ -40,8 +47,37 @@ def handle_setup():
     try:
         config = request.json['config']
         response = setup(config)
+
+        # Create a log message dictionary
+        log_message = {
+            'type': '/setup',
+            'ip': request.remote_addr,
+            'session_id': "default",
+            'message': "",
+            'history': [],
+            'response': "",
+            'error': "None"
+        }
+
+        # Log the message
+        update_logs_in_db(get_logs(), log_message)
+
         return jsonify({"success": True, "message": "Setup successful."})
     except Exception as e:
+        # Create a log message dictionary
+        log_message = {
+            'type': '/setup',
+            'ip': request.remote_addr,
+            'session_id': "default",
+            'message': "",
+            'history': [],
+            'response': "",
+            'error': str(e)
+        }
+
+        # Log the message
+        update_logs_in_db(get_logs(), log_message)
+
         return jsonify({"success": False, "message": str(e)})
 
 
@@ -84,8 +120,36 @@ def handle_run():
         update_history_in_db(get_db(), session_id, message, "human")
         update_history_in_db(get_db(), session_id, response, "ai")
 
+        # Create a log message dictionary
+        log_message = {
+            'type': '/run',
+            'ip': request.remote_addr,
+            'session_id': session_id or "default",
+            'message': message,
+            'history': history,
+            'response': response,
+            'error': "None"
+        }
+
+        # Log the message
+        update_logs_in_db(get_logs(), log_message)
+
         return jsonify(response)
     except Exception as e:
+        # Create a log message dictionary
+        log_message = {
+            'type': '/run',
+            'ip': request.remote_addr,
+            'session_id': session_id or "default",
+            'message': message,
+            'history': history,
+            'response': "None",
+            'error': str(e)
+        }
+
+        # Log the message
+        update_logs_in_db(get_logs(), log_message)
+
         return jsonify(str(e))
 
 
@@ -121,6 +185,11 @@ def handle_messenger():
     return request.args['hub.challenge'], 200
 
 
+@app.route('/logs')
+def get_logs():
+    return jsonify(get_logs_from_db(get_logs()))
+
+
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -131,6 +200,20 @@ def get_db():
 
 def close_db(e=None):
     db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+
+
+def get_logs():
+    db = getattr(g, '_logs', None)
+    if db is None:
+        db = g._logs = sqlite3.connect(LOG_DATABASE)
+    create_or_update_logs_db(db)
+    return db
+
+
+def close_logs(e=None):
+    db = getattr(g, '_logs', None)
     if db is not None:
         db.close()
 
