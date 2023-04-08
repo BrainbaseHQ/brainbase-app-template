@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, g
-from src.index import run, setup
+from src.index import run, setup, approve
 from flask_cors import CORS
 from memory import create_or_update_db, get_history_from_db, update_history_in_db
 from logs import update_logs_in_db, get_logs_from_db, create_or_update_logs_db
