@@ -7,6 +7,7 @@ import sqlite3
 import threading
 import requests
 import logging
+import json
 
 app = Flask(__name__)
 CORS(app)
@@ -151,7 +152,73 @@ def handle_run():
         update_logs_in_db(get_logs(), log_message)
 
         return jsonify(str(e))
+    
+"""
+    This is the approve endpoint. It is called when the user approves or
+    rejects a request from your app. It is passed a data object that contains
+    the user's input. You can use this to process the user's input and return
+    a response.
 
+    The approve function should return a dictionary with the following keys:
+    - success: a boolean indicating whether the approve was successful
+    - message: a string containing a message to display to the user
+    - data: a dictionary containing any data you want to pass to the frontend
+    - context: a dictionary containing any context you want to pass to the next
+                approve call
+
+    The approve function should raise an exception if the approve was not
+    successful. The exception message will be displayed to the user.
+"""
+
+
+@app.route('/approve', methods=['POST'])
+def handle_approve():
+    session_id = None
+
+    try:
+        # Get the session ID from the request
+        session_id = request.json['session_id']
+    except:
+        pass
+
+    # Get the history from the database
+    history = get_history_from_db(get_db(), session_id)
+
+    try:
+        data = request.json['data']
+        response = approve(data["type"], data["request"])
+
+        # Create a log message dictionary
+        log_message = {
+            'type': '/approve',
+            'ip': request.remote_addr,
+            'session_id': session_id or "default",
+            'message': json.dumps(data),
+            'history': history,
+            'response': response,
+            'error': "None"
+        }
+
+        # Log the message
+        update_logs_in_db(get_logs(), log_message)
+
+        return jsonify(response)
+    except Exception as e:
+        # Create a log message dictionary
+        log_message = {
+            'type': '/approve',
+            'ip': request.remote_addr,
+            'session_id': session_id or "default",
+            'message': json.dumps(data),
+            'history': history,
+            'response': "None",
+            'error': str(e)
+        }
+
+        # Log the message
+        update_logs_in_db(get_logs(), log_message)
+
+        return jsonify(str(e))
 
 def process_request(response_url, text):
     # hit the external API endpoint with a GET request
