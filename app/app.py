@@ -22,6 +22,57 @@ LOG_DATABASE = "log.db"
 """
 DATABASE = "chat_history.db"
 
+# Load the config.json file
+with open("/src/config.json", "r") as file:
+    config_data = json.load(file)
+    
+print("config data", config_data)
+
+# Extract the inputs array
+inputs = config_data["inputs"]
+
+# Find all elements with a type of "oauth2"
+oauth2_elements = [elem for elem in inputs if elem["type"] == "oauth2"]
+
+def refresh_token_if_expired(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        for oauth2_element in oauth2_elements:
+            env_key = oauth2_element["key"]
+            token_url = oauth2_element["token_url"]
+            client_id = oauth2_element["client_id"]
+            client_secret = oauth2_element["client_secret"]
+
+            oauth_credentials = json.loads(os.environ[env_key])
+
+            access_token = oauth_credentials["access_token"]
+            refresh_token = oauth_credentials["refresh_token"]
+            expires_at = oauth_credentials["expires_at"]
+
+            if expires_at - time.time() < 60:
+                data = {
+                    "grant_type": "refresh_token",
+                    "refresh_token": refresh_token,
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                }
+                response = requests.post(token_url, data=data)
+                response_json = response.json()
+
+                if response.status_code == 200:
+                    oauth_credentials["access_token"] = response_json["access_token"]
+                    oauth_credentials["refresh_token"] = response_json.get("refresh_token", refresh_token)
+                    oauth_credentials["expires_in"] = response_json["expires_in"]
+                    oauth_credentials["expires_at"] = time.time() + response_json["expires_in"]
+
+                    os.environ[env_key] = json.dumps(oauth_credentials)
+                else:
+                    print(f"Error refreshing token for {env_key}:", response_json)
+
+        return func(*args, **kwargs)
+
+    return wrapper
+
 
 @app.route('/')
 def hello_world():
@@ -100,6 +151,7 @@ def handle_setup():
 
 
 @app.route('/run', methods=['POST'])
+@refresh_token_if_expired
 def handle_run():
 
     session_id = None
@@ -172,6 +224,7 @@ def handle_run():
 
 
 @app.route('/approve', methods=['POST'])
+@refresh_token_if_expired
 def handle_approve():
     session_id = None
 
@@ -231,6 +284,7 @@ def process_request(response_url, text):
 
 
 @app.route('/slack', methods=['POST'])
+@refresh_token_if_expired
 def handle_slack():
     token = request.form['token']
     command = request.form['command']
@@ -246,6 +300,7 @@ def handle_slack():
 
 
 @app.route('/messenger', methods=['GET', 'POST'])
+@refresh_token_if_expired
 def handle_messenger():
     print(request.args)
     # Return a 200 OK response to acknowledge receipt of the command
