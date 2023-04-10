@@ -56,7 +56,7 @@ def refresh_token_if_expired(func):
             except:
                 expires_at = None
 
-            if (expires_at - time.time() < 60) or (expires_at == None):
+            if (expires_at == None) or (expires_at - time.time() < 60):
                 data = {
                     "grant_type": "refresh_token",
                     "refresh_token": refresh_token,
