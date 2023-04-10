@@ -23,7 +23,7 @@ LOG_DATABASE = "log.db"
 DATABASE = "chat_history.db"
 
 # Load the config.json file
-with open("/src/config.json", "r") as file:
+with open("app/src/config.json", "r") as file:
     config_data = json.load(file)
     
 print("config data", config_data)
