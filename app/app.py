@@ -49,9 +49,13 @@ def refresh_token_if_expired(func):
 
             access_token = oauth_credentials["access_token"]
             refresh_token = oauth_credentials["refresh_token"]
-            expires_at = oauth_credentials["expires_at"]
+            
+            try:
+                expires_at = oauth_credentials["expires_at"]
+            except:
+                expires_at = None
 
-            if expires_at - time.time() < 60:
+            if (expires_at - time.time() < 60) or (expires_at == None):
                 data = {
                     "grant_type": "refresh_token",
                     "refresh_token": refresh_token,
