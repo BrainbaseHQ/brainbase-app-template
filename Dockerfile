@@ -5,6 +5,9 @@ LABEL maintainer="egrigokhan@gmail.com"
 COPY . /app
 WORKDIR /app
 
+# Install cron package
+RUN apt-get update && apt-get -y install cron
+
 # Install dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
