@@ -297,8 +297,12 @@ def handle_approve():
 def handle_cron():
     try:
         cron()
-    except:
+        
+        return jsonify({"success": True, "message": "Cron successful."})
+    except Exception as e:
         print("Cron job failed.")
+        
+        return jsonify(str(e))
 
 def process_request(response_url, text):
     # hit the external API endpoint with a GET request
