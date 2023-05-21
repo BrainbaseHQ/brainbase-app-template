@@ -17,7 +17,7 @@ RUN pip install -r app/src/requirements.txt
 RUN chmod +x cron.sh
 
 # Add cron job to execute cron.sh every 5 minutes
-RUN echo "*/5 * * * * /cron.sh >> /var/log/cron.log 2>&1" > /etc/cron.d/mycron
+RUN echo "*/5 * * * * /app/cron.sh >> /var/log/cron.log 2>&1" > /etc/cron.d/mycron
 
 # Give execution rights on the cron job
 RUN chmod 0644 /etc/cron.d/mycron
