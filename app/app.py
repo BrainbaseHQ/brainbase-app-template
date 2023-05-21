@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, g
 from functools import wraps
-from src.index import run, setup, approve
+from src.index import run, setup, approve, cron
 from flask_cors import CORS
 from memory import create_or_update_db, get_history_from_db, update_history_in_db
 from logs import update_logs_in_db, get_logs_from_db, create_or_update_logs_db
@@ -279,6 +279,26 @@ def handle_approve():
         update_logs_in_db(get_logs(), log_message)
 
         return jsonify(str(e))
+    
+""" 
+    This is the cron endpoint. It is called every 5 minutes.
+
+    The run function should return a dictionary with the following keys:
+    - success: a boolean indicating whether the run was successful
+    - message: a string containing a message to display to the user
+    - data: a dictionary containing any data you want to pass to the frontend
+    - context: a dictionary containing any context you want to pass to the next
+                run call
+ """
+
+
+@app.route('/cron', methods=['GET'])
+@refresh_token_if_expired
+def handle_cron():
+    try:
+        cron()
+    except:
+        print("Cron job failed.")
 
 def process_request(response_url, text):
     # hit the external API endpoint with a GET request
